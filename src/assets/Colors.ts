@@ -1,7 +1,7 @@
 export default {
-  GREEN: '#259AE6',
+  GREEN: '#30453C',
   BLACK: '#000000',
-  WHITE: '#FFFFFF',
+  WHITE: '#F6F1ED',
   BACKGROUND: '#F8F8F8',
   GRAY: '#a9a9a9',
   LIGHT_GRAY: '#d3d3d3',

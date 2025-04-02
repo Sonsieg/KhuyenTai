@@ -7,25 +7,18 @@
  */
 
 import React from 'react';
-import type {Node} from 'react';
 import {
   SafeAreaView,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   useColorScheme,
   View,
 } from 'react-native';
+import Colors from './src/assets/Colors';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
 import CameraScreen from './src/screens/CameraScreen';
+import HomeScreen from './src/screens/HomeScreen';
 
 const Section = ({children, title}): Node => {
   const isDarkMode = useColorScheme() === 'dark';
@@ -63,14 +56,32 @@ const App: () => Node = () => {
   return (
     <SafeAreaView style={backgroundStyle}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <View style={{backgroundColor: 'red', marginTop: 20}}>
-        <CameraScreen />
+      <View>
+        <View style={styles.header}>
+          <Text style={styles.title}>Bling Vision</Text>
+        </View>
+        <HomeScreen />
       </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  header: {
+    backgroundColor: Colors.GREEN,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    color: Colors.WHITE,
+    fontSize: 28,
+    fontWeight: 'bold',
+    fontFamily: 'serif', // Hoặc có thể dùng font Google Fonts nếu tích hợp
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
   sectionContainer: {
     marginTop: 32,
     paddingHorizontal: 24,
