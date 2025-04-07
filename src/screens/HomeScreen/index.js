@@ -60,15 +60,13 @@ const HomeScreen = () => {
         <>
           <ImageCarousel />
           <View style={styles.container}>{renderCategoryTabs()}</View>
-          <CameraScreen />
         </>
       }
       data={filteredItems}
       keyExtractor={item => item.id.toString()}
       renderItem={({item}) => <Product item={item} />}
-      numColumns={2}
+      numColumns={1}
       contentContainerStyle={styles.listContainer}
-      ListFooterComponent={<View style={{height: 30}} />} // Add space at the bottom
     />
   );
 };
@@ -78,7 +76,6 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: '#FFF',
   },
   tabContent: {
     flexDirection: 'row',
@@ -89,7 +86,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: '#F6F1ED',
     borderRadius: 20,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#30453C',
     marginRight: 10,
   },
@@ -103,8 +100,5 @@ const styles = StyleSheet.create({
   },
   tabTextSelected: {
     color: '#F6F1ED',
-  },
-  listContainer: {
-    paddingBottom: 200,
   },
 });
