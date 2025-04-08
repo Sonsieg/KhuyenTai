@@ -7,139 +7,168 @@ import {
   SafeAreaView,
   Modal,
   Image,
-  ScrollView,
+  Dimensions,
 } from 'react-native';
 import Colors from '../../assets/Colors';
 import HomeScreen from '../HomeScreen';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import {
+  Gesture,
+  GestureDetector,
+  PanGesture,
+  RotationGesture, // Import RotationGesture
+} from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedGestureHandler,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import Images from '../../assets/Images';
+
+const IMAGE_SIZE = 70;
+function clamp(val, min, max) {
+  return Math.min(Math.max(val, min), max);
+}
+
+const {width, height} = Dimensions.get('screen');
 
 const DashboardScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [imageUri, setImageUri] = useState(null);
 
-  // Mở camera để chụp ảnh
+  const translationX = useSharedValue(0);
+  const translationY = useSharedValue(0);
+  const prevTranslationX = useSharedValue(0);
+  const prevTranslationY = useSharedValue(0);
+  const rotation = useSharedValue(0); // SharedValue cho góc xoay
+  const prevRotation = useSharedValue(0);
+
+  const animatedStyles = useAnimatedStyle(() => ({
+    transform: [
+      {translateX: translationX.value},
+      {translateY: translationY.value},
+      {rotate: `${rotation.value}rad`}, // Thêm thuộc tính rotate
+    ],
+  }));
+
+  const pan = Gesture.Pan()
+    .minDistance(1)
+    .onStart(() => {
+      prevTranslationX.value = translationX.value;
+      prevTranslationY.value = translationY.value;
+    })
+    .onUpdate(event => {
+      const maxTranslateX = width / 2 - 50;
+      const maxTranslateY = height / 2 - 50;
+
+      translationX.value = clamp(
+        prevTranslationX.value + event.translationX,
+        -maxTranslateX,
+        maxTranslateX,
+      );
+      translationY.value = clamp(
+        prevTranslationY.value + event.translationY,
+        -maxTranslateY,
+        maxTranslateY,
+      );
+    })
+    .runOnJS(true);
+
+  const rotate = Gesture.Rotation()
+    .onStart(() => {
+      prevRotation.value = rotation.value;
+    })
+    .onUpdate(event => {
+      rotation.value = prevRotation.value + event.rotation;
+    })
+    .runOnJS(true);
+
+  const combinedGesture = Gesture.Simultaneous(pan, rotate);
+
   const openCamera = () => {
     setModalVisible(false);
-    const options = {
-      mediaType: 'photo',
-      quality: 1,
-      saveToPhotos: true,
-    };
-
-    launchCamera(options, response => {
-      console.log('Camera response:', response); // In ra chi tiết response để kiểm tra
-
-      // Kiểm tra response trước khi lấy uri
-      if (
-        response &&
-        !response.didCancel &&
-        !response.errorCode &&
-        response.assets &&
-        response.assets.length > 0
-      ) {
-        setImageUri(response.assets[0].uri);
-      } else {
-        console.error('Camera error or no assets:', response.errorCode);
-      }
-    });
+    launchCamera(
+      {mediaType: 'photo', quality: 1, saveToPhotos: true},
+      response => {
+        if (response?.assets?.length > 0) {
+          setImageUri({uri: response.assets[0].uri});
+        }
+      },
+    );
   };
+
   const openGallery = () => {
     setModalVisible(false);
-
-    const options = {
-      mediaType: 'photo',
-      quality: 1,
-    };
-    launchImageLibrary(options, response => {
-      if (!response.didCancel && !response.error) {
-        setImageUri(response?.assets[0].uri);
+    launchImageLibrary({mediaType: 'photo', quality: 1}, response => {
+      if (response?.assets?.length > 0) {
+        setImageUri({uri: response.assets[0].uri});
       }
     });
   };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.mainContent}>
           <View style={styles.dishesContainer}>
-            <View
-              style={{
-                width: '100%',
-                alignItems: 'flex-end',
-              }}>
+            <View style={{width: '100%', alignItems: 'flex-end'}}>
               <TouchableOpacity
                 style={{padding: 4, backgroundColor: Colors.GREEN}}
                 onPress={() => {
                   setModalVisible(true);
                 }}>
-                <Text style={{color: 'black'}}>Save Changes</Text>
+                <Text style={{color: 'black'}}>Chọn ảnh</Text>
               </TouchableOpacity>
             </View>
+
             <View style={styles.addDishBox}>
               {imageUri ? (
                 <Image
-                  source={{uri: imageUri}}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                  }}
+                  source={imageUri}
+                  style={{width: '100%', height: '100%'}}
                 />
               ) : (
                 <Text style={styles.addDishText}>Add new dish</Text>
               )}
+
+              {/* 🔥 Hình có thể kéo và xoay */}
+              <GestureDetector gesture={combinedGesture}>
+                <Animated.View
+                  style={[
+                    animatedStyles,
+                    styles.box,
+                    {
+                      position: 'absolute',
+                      zIndex: 100,
+                    },
+                  ]}>
+                  <Image source={Images.ITEM1} style={styles.thumbnail} />
+                </Animated.View>
+              </GestureDetector>
             </View>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.buttonsContainer}>
-            <TouchableOpacity style={styles.saveButton}>
-              <Text style={styles.saveButtonText}>Save Changes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton}>
-              <Text style={styles.saveButtonText}>Save Changes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton}>
-              <Text style={styles.saveButtonText}>Save Changes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton}>
-              <Text style={styles.saveButtonText}>Save Changes</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Sidebar - Right Side */}
         <View style={styles.sidebar}>
-          <ScrollView style={styles.sidebarScroll}>
-            <HomeScreen />
-          </ScrollView>
+          <HomeScreen />
         </View>
       </View>
+
       <Modal
         animationType="slide"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}>
-        <View
-          style={{
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            width: '100%',
-            height: '100%',
-          }}>
-          <View
-            style={{
-              width: 200,
-              padding: 20,
-              backgroundColor: Colors.WHITE,
-              borderRadius: 10,
-            }}>
+        <View style={styles.modalBackground}>
+          <View style={styles.modalBox}>
             <TouchableOpacity onPress={openCamera}>
-              <Text style={{padding: 10, color: Colors.BLACK}}>Chụp ảnh</Text>
+              <Text style={styles.modalText}>Chụp ảnh</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity onPress={openGallery}>
-              <Text style={{padding: 10, color: Colors.BLACK}}>
-                Chọn ảnh từ thư viện
-              </Text>
+              <Text style={styles.modalText}>Chọn ảnh từ thư viện</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -152,7 +181,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.WHITE,
     padding: 16,
-    height: '100%',
+    height: '98%',
   },
   content: {
     flexDirection: 'row',
@@ -180,6 +209,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: '2.5%',
     height: '90%',
+    overflow: 'hidden',
   },
   addDishText: {
     marginTop: 8,
@@ -191,54 +221,43 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
     marginVertical: 16,
   },
-  buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-  },
-  saveButton: {
-    backgroundColor: '#e07a5f',
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    width: '23%', // ~25% minus margins
-  },
-  saveButtonText: {
-    color: '#ffffff',
-    fontWeight: '500',
-  },
   sidebar: {
     flex: 0.3,
     backgroundColor: Colors.WHITE,
     height: '80%',
   },
-  sidebarScroll: {
-    flex: 1,
+  draggableImage: {
+    width: IMAGE_SIZE,
+    height: IMAGE_SIZE,
   },
-  sidebarItem: {
-    backgroundColor: '#fbd0c8', // Light salmon color
-    padding: 16,
-    marginVertical: 8,
-    marginHorizontal: 16,
+  thumbnail: {
+    width: '100%',
+    height: '100%',
     borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#e07a5f',
   },
-  sidebarItemHeader: {
-    flexDirection: 'row',
+  modalBackground: {
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: '100%',
+    height: '100%',
   },
-  sidebarItemTitle: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginLeft: 8,
-    color: '#e07a5f',
+  modalBox: {
+    width: 200,
+    padding: 20,
+    backgroundColor: Colors.WHITE,
+    borderRadius: 10,
   },
-  sidebarItemSubtitle: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 26,
+  modalText: {
+    padding: 10,
+    color: Colors.BLACK,
+  },
+  box: {
+    height: 120,
+    width: 120,
+    backgroundColor: 'transparent',
+    borderRadius: 20,
+    marginBottom: 30,
   },
 });
 

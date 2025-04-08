@@ -1,23 +1,27 @@
 import React from 'react';
 import {SafeAreaView, StatusBar, StyleSheet, Text, View} from 'react-native';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import Colors from './src/assets/Colors';
 import DashboardScreen from './src/screens/DashboardScreen';
 
 const App: () => Node = () => {
   return (
-    <SafeAreaView>
-      <StatusBar barStyle={'light-content'} />
-      <View>
-        <View style={styles.header}>
-          <Text style={styles.title}>Bling Vision</Text>
+    <GestureHandlerRootView style={styles.container}>
+      <SafeAreaView>
+        <StatusBar barStyle={'light-content'} />
+        <View>
+          <View style={styles.header}>
+            <Text style={styles.title}>Bling Vision</Text>
+          </View>
+          <DashboardScreen />
         </View>
-        <DashboardScreen />
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {},
   header: {
     backgroundColor: Colors.GREEN,
     paddingVertical: 20,

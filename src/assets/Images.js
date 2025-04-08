@@ -90,4 +90,8 @@ export default {
   CAROUSEL_7: require('./images/image7.jpg'),
   CAROUSEL_8: require('./images/image8.jpg'),
   CAROUSEL_9: require('./images/image9.jpg'),
+  ITEM1: require('./images/ITEM1.png'),
+  ITEM2: require('./images/ITEM2.png'),
+  ITEM3: require('./images/ITEM3.png'),
+  ITEM4: require('./images/ITEM4.png'),
 };
