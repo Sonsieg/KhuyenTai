@@ -130,7 +130,7 @@ const DashboardScreen = () => {
                   style={{width: '100%', height: '100%'}}
                 />
               ) : (
-                <Text style={styles.addDishText}>Add new dish</Text>
+                 <Text style={styles.addDishText}></Text>
               )}
 
               {/* 🔥 Hình có thể kéo và xoay */}
