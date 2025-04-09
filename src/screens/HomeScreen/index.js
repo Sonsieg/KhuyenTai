@@ -7,17 +7,22 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
+import Images from '../../assets/Images';
 import ImageCarousel from '../../components/ImageCarousel';
 import Product from '../../components/Product';
 import CameraScreen from '../CameraScreen';
 
 const categories = ['Đồ trang sức', 'Đồ bạc', 'May mắn', 'Bông tai', 'Khuyên'];
 const items = [
-  {id: 1, name: 'Nhẫn bạc', category: 'Đồ bạc'},
-  {id: 2, name: 'Vòng tay vàng', category: 'Đồ trang sức'},
-  {id: 3, name: 'Mặt dây chuyền may mắn', category: 'May mắn'},
-  {id: 4, name: 'Khuyên tai vàng', category: 'Bông tai'},
-  {id: 5, name: 'Khuyên bạc', category: 'Khuyên'},
+  {id: 1, name: 'Nhẫn bạc', category: 'Đồ bạc', image: Images.ITEM1},
+  {id: 2, name: 'Vòng tay vàng', category: 'Đồ trang sức', image: Images.ITEM2},
+  {
+    id: 3,
+    name: 'Mặt dây chuyền may mắn',
+    category: 'May mắn',
+    image: Images.ITEM3,
+  },
+  {id: 4, name: 'Khuyên tai vàng', category: 'Bông tai', image: Images.ITEM4},
 ];
 
 const HomeScreen = () => {

@@ -37,55 +37,98 @@ const {width, height} = Dimensions.get('screen');
 const DashboardScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [imageUri, setImageUri] = useState(null);
+  const numberOfItems = 4;
+  const initialLeftOffset = 20;
+  const verticalSpacing = 20;
+  const itemSize = 80;
 
-  const translationX = useSharedValue(0);
-  const translationY = useSharedValue(0);
-  const prevTranslationX = useSharedValue(0);
-  const prevTranslationY = useSharedValue(0);
-  const rotation = useSharedValue(0); // SharedValue cho góc xoay
-  const prevRotation = useSharedValue(0);
-
-  const animatedStyles = useAnimatedStyle(() => ({
-    transform: [
-      {translateX: translationX.value},
-      {translateY: translationY.value},
-      {rotate: `${rotation.value}rad`}, // Thêm thuộc tính rotate
-    ],
+  const itemStates = Array.from({length: numberOfItems}, (_, index) => ({
+    translationX: useSharedValue(initialLeftOffset),
+    translationY: useSharedValue(
+      verticalSpacing + index * (itemSize + verticalSpacing),
+    ),
+    prevTranslationX: useSharedValue(initialLeftOffset),
+    prevTranslationY: useSharedValue(
+      verticalSpacing + index * (itemSize + verticalSpacing),
+    ),
+    rotation: useSharedValue(0),
+    prevRotation: useSharedValue(0),
+    scale: useSharedValue(1), // Thêm giá trị scale
+    prevScale: useSharedValue(1), // Thêm giá trị prevScale
   }));
 
-  const pan = Gesture.Pan()
-    .minDistance(1)
-    .onStart(() => {
-      prevTranslationX.value = translationX.value;
-      prevTranslationY.value = translationY.value;
-    })
-    .onUpdate(event => {
-      const maxTranslateX = width / 2 - 50;
-      const maxTranslateY = height / 2 - 50;
+  // Cập nhật animated style để áp dụng scale
+  const getItemAnimatedStyle = index => {
+    return useAnimatedStyle(() => ({
+      transform: [
+        {translateX: itemStates[index].translationX.value},
+        {translateY: itemStates[index].translationY.value},
+        {scale: itemStates[index].scale.value}, // Thêm scale transformation
+        {rotate: `${itemStates[index].rotation.value}rad`},
+      ],
+    }));
+  };
 
-      translationX.value = clamp(
-        prevTranslationX.value + event.translationX,
-        -maxTranslateX,
-        maxTranslateX,
-      );
-      translationY.value = clamp(
-        prevTranslationY.value + event.translationY,
-        -maxTranslateY,
-        maxTranslateY,
-      );
-    })
-    .runOnJS(true);
+  // Cập nhật createGestureHandler để thêm gesture pinch
+  const createGestureHandler = index => {
+    const pan = Gesture.Pan()
+      .minDistance(1)
+      .onStart(() => {
+        itemStates[index].prevTranslationX.value =
+          itemStates[index].translationX.value;
+        itemStates[index].prevTranslationY.value =
+          itemStates[index].translationY.value;
+      })
+      .onUpdate(event => {
+        // Điều chỉnh giới hạn kéo theo chiều ngang
+        const maxTranslateX = width - itemSize; // Cho phép kéo đến tận cùng màn hình
+        const minTranslateX = -initialLeftOffset; // Cho phép kéo về bên trái đến giới hạn
 
-  const rotate = Gesture.Rotation()
-    .onStart(() => {
-      prevRotation.value = rotation.value;
-    })
-    .onUpdate(event => {
-      rotation.value = prevRotation.value + event.rotation;
-    })
-    .runOnJS(true);
+        itemStates[index].translationX.value = clamp(
+          itemStates[index].prevTranslationX.value + event.translationX,
+          minTranslateX,
+          maxTranslateX,
+        );
 
-  const combinedGesture = Gesture.Simultaneous(pan, rotate);
+        // Điều chỉnh giới hạn kéo theo chiều dọc
+        const maxTranslateY = height - itemSize - verticalSpacing;
+        const minTranslateY = -verticalSpacing;
+
+        itemStates[index].translationY.value = clamp(
+          itemStates[index].prevTranslationY.value + event.translationY,
+          minTranslateY,
+          maxTranslateY,
+        );
+      })
+      .runOnJS(true);
+
+    const rotate = Gesture.Rotation()
+      .onStart(() => {
+        itemStates[index].prevRotation.value = itemStates[index].rotation.value;
+      })
+      .onUpdate(event => {
+        itemStates[index].rotation.value =
+          itemStates[index].prevRotation.value + event.rotation;
+      })
+      .runOnJS(true);
+
+    // Thêm gesture pinch để zoom
+    const pinch = Gesture.Pinch()
+      .onStart(() => {
+        itemStates[index].prevScale.value = itemStates[index].scale.value;
+      })
+      .onUpdate(event => {
+        // Giới hạn scale từ 0.5 đến 3
+        itemStates[index].scale.value = clamp(
+          itemStates[index].prevScale.value * event.scale,
+          0.5,
+          3,
+        );
+      })
+      .runOnJS(true);
+
+    return Gesture.Simultaneous(pan, rotate, pinch);
+  };
 
   const openCamera = () => {
     setModalVisible(false);
@@ -108,6 +151,8 @@ const DashboardScreen = () => {
     });
   };
 
+  const itemImages = [Images.ITEM1, Images.ITEM2, Images.ITEM3, Images.ITEM4];
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -115,11 +160,15 @@ const DashboardScreen = () => {
           <View style={styles.dishesContainer}>
             <View style={{width: '100%', alignItems: 'flex-end'}}>
               <TouchableOpacity
-                style={{padding: 4, backgroundColor: Colors.GREEN}}
+                style={{
+                  padding: 6,
+                  backgroundColor: Colors.GREEN,
+                  borderRadius: 4,
+                }}
                 onPress={() => {
                   setModalVisible(true);
                 }}>
-                <Text style={{color: 'black'}}>Chọn ảnh</Text>
+                <Text style={{color: 'white'}}>Chọn ảnh</Text>
               </TouchableOpacity>
             </View>
 
@@ -130,23 +179,35 @@ const DashboardScreen = () => {
                   style={{width: '100%', height: '100%'}}
                 />
               ) : (
-                 <Text style={styles.addDishText}></Text>
+                <Text style={styles.addDishText}></Text>
               )}
 
-              {/* 🔥 Hình có thể kéo và xoay */}
-              <GestureDetector gesture={combinedGesture}>
-                <Animated.View
-                  style={[
-                    animatedStyles,
-                    styles.box,
-                    {
-                      position: 'absolute',
-                      zIndex: 100,
-                    },
-                  ]}>
-                  <Image source={Images.ITEM1} style={styles.thumbnail} />
-                </Animated.View>
-              </GestureDetector>
+              {/* 🔥 Các hình có thể kéo và xoay */}
+              {itemImages.map((image, index) => (
+                <GestureDetector
+                  key={index}
+                  gesture={createGestureHandler(index)}>
+                  <Animated.View
+                    style={[
+                      getItemAnimatedStyle(index),
+                      styles.box,
+                      {
+                        position: 'absolute',
+                        zIndex: 100 + index,
+                        width: itemSize,
+                        height: itemSize,
+                        top: 0,
+                        left: 0,
+                      },
+                    ]}>
+                    <Image
+                      source={image}
+                      style={styles.thumbnail}
+                      resizeMode="contain"
+                    />
+                  </Animated.View>
+                </GestureDetector>
+              ))}
             </View>
           </View>
         </View>
@@ -253,11 +314,11 @@ const styles = StyleSheet.create({
     color: Colors.BLACK,
   },
   box: {
-    height: 120,
-    width: 120,
     backgroundColor: 'transparent',
     borderRadius: 20,
     marginBottom: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
