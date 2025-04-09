@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   Modal,
   Image,
   Dimensions,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import Colors from '../../assets/Colors';
 import HomeScreen from '../HomeScreen';
@@ -20,12 +22,10 @@ import {
 } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
-  useAnimatedGestureHandler,
   useAnimatedStyle,
-  withSpring,
-  withTiming,
 } from 'react-native-reanimated';
 import Images from '../../assets/Images';
+import ViewShot from 'react-native-view-shot';
 
 const IMAGE_SIZE = 70;
 function clamp(val, min, max) {
@@ -33,6 +33,18 @@ function clamp(val, min, max) {
 }
 
 const {width, height} = Dimensions.get('screen');
+const hasAndroidPermission = async () => {
+  const permission = PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE;
+
+  const hasPermission = await PermissionsAndroid.check(permission);
+  if (hasPermission) {
+    return true;
+  }
+
+  const status = await PermissionsAndroid.request(permission);
+  return status === 'granted';
+};
+const FOLDER = 'BlingVision' || '';
 
 const DashboardScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -41,6 +53,7 @@ const DashboardScreen = () => {
   const initialLeftOffset = 20;
   const verticalSpacing = 20;
   const itemSize = 80;
+  const qrRef = useRef(null);
 
   const itemStates = Array.from({length: numberOfItems}, (_, index) => ({
     translationX: useSharedValue(initialLeftOffset),
@@ -150,6 +163,22 @@ const DashboardScreen = () => {
       }
     });
   };
+  const saveImage = async uri => {};
+
+  const onCapture = () => {
+    qrRef.current
+      .capture()
+      .then(async uri => {
+        const success = await saveImage(uri);
+        if (success) {
+          // Optionally provide feedback to the user
+        }
+      })
+      .catch(e => {
+        console.log('eeeeee', e);
+        alert('Có lỗi xảy ra, vui lòng thử lại');
+      });
+  };
 
   const itemImages = [Images.ITEM1, Images.ITEM2, Images.ITEM3, Images.ITEM4];
 
@@ -158,56 +187,85 @@ const DashboardScreen = () => {
       <View style={styles.content}>
         <View style={styles.mainContent}>
           <View style={styles.dishesContainer}>
-            <View style={{width: '100%', alignItems: 'flex-end'}}>
-              <TouchableOpacity
+            <View style={{width: '100%', paddingBottom: 10}}>
+              <View
                 style={{
-                  padding: 6,
-                  backgroundColor: Colors.GREEN,
-                  borderRadius: 4,
-                }}
-                onPress={() => {
-                  setModalVisible(true);
+                  flexDirection: 'row',
+                  justifyContent: 'flex-end',
                 }}>
-                <Text style={{color: 'white'}}>Chọn ảnh</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    padding: 6,
+                    backgroundColor: Colors.GREEN,
+                    borderRadius: 4,
+                    marginRight: 20,
+                  }}
+                  onPress={() => {
+                    setModalVisible(true);
+                  }}>
+                  <Text style={{color: 'white'}}>Chọn ảnh</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    padding: 6,
+                    backgroundColor: Colors.BLUE,
+                    borderRadius: 4,
+                  }}
+                  onPress={onCapture}>
+                  <Text style={{color: 'white'}}>Tải ảnh</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-
             <View style={styles.addDishBox}>
-              {imageUri ? (
-                <Image
-                  source={imageUri}
-                  style={{width: '100%', height: '100%'}}
-                />
-              ) : (
-                <Text style={styles.addDishText}></Text>
-              )}
-
-              {/* 🔥 Các hình có thể kéo và xoay */}
-              {itemImages.map((image, index) => (
-                <GestureDetector
-                  key={index}
-                  gesture={createGestureHandler(index)}>
-                  <Animated.View
-                    style={[
-                      getItemAnimatedStyle(index),
-                      styles.box,
-                      {
-                        position: 'absolute',
-                        zIndex: 100 + index,
-                        width: itemSize,
-                        height: itemSize,
-                        top: 0,
-                        left: 0,
-                      },
-                    ]}>
+              <View
+                style={{width: '100%', height: '100%', position: 'relative'}}>
+                <ViewShot
+                  ref={qrRef}
+                  options={{
+                    format: 'jpg',
+                    quality: 1,
+                  }}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                  {imageUri ? (
                     <Image
-                      source={image}
-                      style={styles.thumbnail}
-                      resizeMode="contain"
+                      source={imageUri}
+                      style={{width: '100%', height: '100%'}}
                     />
-                  </Animated.View>
-                </GestureDetector>
-              ))}
+                  ) : (
+                    <Text style={styles.addDishText}></Text>
+                  )}
+                </ViewShot>
+
+                {/* 🔥 Các hình có thể kéo và xoay */}
+                {itemImages.map((image, index) => (
+                  <GestureDetector
+                    key={index}
+                    gesture={createGestureHandler(index)}>
+                    <Animated.View
+                      style={[
+                        getItemAnimatedStyle(index),
+                        styles.box,
+                        {
+                          position: 'absolute',
+                          zIndex: 100 + index,
+                          width: itemSize,
+                          height: itemSize,
+                        },
+                      ]}>
+                      <Image
+                        source={image}
+                        style={styles.thumbnail}
+                        resizeMode="contain"
+                      />
+                    </Animated.View>
+                  </GestureDetector>
+                ))}
+              </View>
             </View>
           </View>
         </View>
@@ -268,7 +326,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    margin: '2.5%',
     height: '90%',
     overflow: 'hidden',
   },
